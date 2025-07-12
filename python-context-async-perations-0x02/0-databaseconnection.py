@@ -1,5 +1,9 @@
+import os
 import mysql.connector
 from mysql.connector import Error
+from dotenv import load_dotenv   
+
+load_dotenv()   # reads .env into process env 
 
 class DatabaseConnection:
     """
@@ -7,48 +11,44 @@ class DatabaseConnection:
     Opens connection on __enter__, commits/rolls back and closes on __exit__.
     """
 
-    def __init__(self, host, user, password, database):
+
+    def __init__(self):
+        # pull credentials from environment
         self.config = {
-            'host': host,
-            'user': user,
-            'password': password,
-            'database': database
+            "host":     os.getenv("DB_HOST"),
+            "user":     os.getenv("DB_USER"),
+            "password": os.getenv("DB_PASSWORD"),
+            "database": os.getenv("DB_NAME"),
         }
-        self.conn = None
+        self.conn   = None
         self.cursor = None
 
     def __enter__(self):
         try:
-            self.conn = mysql.connector.connect(**self.config)
+            self.conn   = mysql.connector.connect(**self.config)
             self.cursor = self.conn.cursor()
-            return self.cursor
+            return self.cursor                      
         except Error as e:
-            print("Error connecting to MySQL:", e)
+            print("  MySQL connection error:", e)
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.conn:
-            if exc_type:
+            if exc_type:          # an exception happened
                 self.conn.rollback()
-            else:
+            else:                 # success, commit writes
                 self.conn.commit()
             self.cursor.close()
             self.conn.close()
-        return False  # Don't suppress exceptions
+        return False              # propagate exceptions if any
 
 
-# Replace these with your actual MySQL credentials
-HOST = "localhost"
-USER = "root"
-PASSWORD = "mypass"
-DATABASE = "mypass"
+# Example usage
 
-with DatabaseConnection(HOST, USER, PASSWORD, DATABASE) as cursor:
-    # Run SELECT query
-    cursor.execute("SELECT * FROM users")
-    results = cursor.fetchall()
-
-    # Print the results
-    print("Query Results:")
-    for row in results:
-        print(row)
+if __name__ == "__main__":
+    with DatabaseConnection() as cursor:
+        cursor.execute("SELECT * FROM users")
+        rows = cursor.fetchall()
+        print("Query results:")
+        for row in rows:
+            print(row)
