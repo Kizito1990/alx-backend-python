@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('chats.urls')),  # Mount your app's API here
+    path('api-auth/', include('chats.urls')),  # Mount your app's API here
 ]
