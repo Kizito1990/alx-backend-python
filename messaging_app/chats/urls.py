@@ -6,7 +6,7 @@ from .views import ConversationViewSet, MessageViewSet
 
 router = DefaultRouter()
 router.register(r'conversations', ConversationViewSet, basename='conversation')
-router.register(r'conversations/(?P<conversation_id>\d+)/messages', MessageViewSet, basename='message')
+router.register(r'messages', MessageViewSet, basename='message')
 
 urlpatterns = [
     path('', include(router.urls)),

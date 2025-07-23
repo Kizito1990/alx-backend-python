@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     #custom app
     'chats',
     'rest_framework',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -134,3 +135,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'chats.User'
+
+REST_FRAMEWORK = {
+    ...
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+}
