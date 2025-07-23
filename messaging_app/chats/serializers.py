@@ -1,4 +1,4 @@
-
+# messaging_app/chats/serializers.py
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
@@ -26,8 +26,9 @@ class MessageSerializer(serializers.ModelSerializer):
 
     # Custom validation for content field (e.g. no empty content)
     def validate_content(self, value):
+        # If the message is empty or only contains whitespace, raise a ValidationError
         if not value.strip():
-            raise ValidationError("Message content cannot be empty.")
+            raise ValidationError("Message content cannot be empty or just whitespace.")
         return value
 
 
@@ -42,11 +43,21 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     # Custom validation for participants: at least 2 participants in a conversation
     def validate_participants(self, value):
+        # Raise an error if the conversation has less than 2 participants
         if len(value) < 2:
             raise ValidationError("A conversation must have at least two participants.")
+        # Ensure participants are unique
+        if len(value) != len(set(value)):
+            raise ValidationError("Participants must be unique.")
+        return value
+
+    # Custom validation for conversation to prevent future date for creation
+    def validate_created_at(self, value):
+        from datetime import datetime
+        if value > datetime.now():
+            raise ValidationError("Conversation creation date cannot be in the future.")
         return value
 
     class Meta:
         model = Conversation
         fields = ['id', 'participants', 'created_at', 'messages', 'total_messages']
-
