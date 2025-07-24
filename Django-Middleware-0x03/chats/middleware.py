@@ -1,4 +1,6 @@
-
+import time
+from django.http import JsonResponse
+from collections import defaultdict
 
 import logging
 from datetime import datetime
@@ -38,3 +40,43 @@ class RestrictAccessByTimeMiddleware:
             return HttpResponseForbidden("Access to this app is only allowed between 6 PM and 9 PM.")
 
         return self.get_response(request)
+
+
+
+class RateLimitMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.message_logs = defaultdict(list)  # IP -> list of timestamps
+
+        # Rate limit settings
+        self.max_messages = 5
+        self.time_window = 60  # seconds (1 minute)
+
+    def __call__(self, request):
+        # Only rate limit POST requests to /messages/ endpoint
+        if request.method == "POST" and request.path.startswith("/messages/"):
+            ip = self.get_client_ip(request)
+            now = time.time()
+            window_start = now - self.time_window
+
+            # Clean old requests
+            self.message_logs[ip] = [t for t in self.message_logs[ip] if t > window_start]
+
+            if len(self.message_logs[ip]) >= self.max_messages:
+                return JsonResponse(
+                    {"error": "Rate limit exceeded. Only 5 messages per minute allowed."},
+                    status=429
+                )
+
+            self.message_logs[ip].append(now)
+
+        return self.get_response(request)
+
+    def get_client_ip(self, request):
+        """Get IP address from request headers or fallback to remote address."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
