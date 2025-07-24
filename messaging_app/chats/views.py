@@ -1,4 +1,4 @@
-# messaging_app/chats/views.py
+
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOrSender
+from .permissions import IsParticipantOfConversation
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -16,6 +17,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['participants']  # You can filter by participants' user ID
     permission_classes = [IsParticipantOrSender]
+    permission_classes = [IsParticipantOfConversation]
 
     def get_queryset(self):
         return Conversation.objects.filter(participants=self.request.user).distinct()
@@ -38,6 +40,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['conversation', 'sender']
     permission_classes = [IsParticipantOrSender]
+    permission_classes = [IsParticipantOfConversation]
 
     def get_queryset(self):
         return Message.objects.filter(
