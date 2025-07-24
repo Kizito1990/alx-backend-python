@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
+from .permissions import IsParticipantOrSender
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -14,6 +15,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['participants']  # You can filter by participants' user ID
+    permission_classes = [IsParticipantOrSender]
 
     def get_queryset(self):
         return Conversation.objects.filter(participants=self.request.user).distinct()
@@ -35,6 +37,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['conversation', 'sender']
+    permission_classes = [IsParticipantOrSender]
 
     def get_queryset(self):
         return Message.objects.filter(

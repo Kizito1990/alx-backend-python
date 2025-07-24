@@ -62,5 +62,6 @@ class ConversationSerializer(serializers.ModelSerializer):
         model = Conversation
         fields = ['id', 'participants', 'created_at', 'messages', 'total_messages']
 
-class valid_created(serializers.ValidationError):
-    def validate_created_at(self, value):
+    class valid_creat(serializers.ValidationError):
+        pass
+     
