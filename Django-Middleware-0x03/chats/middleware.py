@@ -43,40 +43,23 @@ class RestrictAccessByTimeMiddleware:
 
 
 
-class RateLimitMiddleware:
+class OffensiveLanguageMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-        self.message_logs = defaultdict(list)  # IP -> list of timestamps
-
-        # Rate limit settings
-        self.max_messages = 5
-        self.time_window = 60  # seconds (1 minute)
+        self.offensive_words = {"badword1", "badword2", "stupid", "idiot"}  # Add more as needed
 
     def __call__(self, request):
-        # Only rate limit POST requests to /messages/ endpoint
         if request.method == "POST" and request.path.startswith("/messages/"):
-            ip = self.get_client_ip(request)
-            now = time.time()
-            window_start = now - self.time_window
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+                message = data.get("message", "")
 
-            # Clean old requests
-            self.message_logs[ip] = [t for t in self.message_logs[ip] if t > window_start]
-
-            if len(self.message_logs[ip]) >= self.max_messages:
-                return JsonResponse(
-                    {"error": "Rate limit exceeded. Only 5 messages per minute allowed."},
-                    status=429
-                )
-
-            self.message_logs[ip].append(now)
+                if any(word.lower() in message.lower() for word in self.offensive_words):
+                    return JsonResponse(
+                        {"error": "Offensive language detected. Please revise your message."},
+                        status=400
+                    )
+            except (ValueError, json.JSONDecodeError):
+                pass  # ignore malformed JSON and let normal error handling take over
 
         return self.get_response(request)
-
-    def get_client_ip(self, request):
-        """Get IP address from request headers or fallback to remote address."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
