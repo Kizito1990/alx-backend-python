@@ -63,3 +63,23 @@ class OffensiveLanguageMiddleware:
                 pass  # ignore malformed JSON and let normal error handling take over
 
         return self.get_response(request)
+
+
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Define restricted paths or methods that require elevated permission
+        restricted_methods = ['POST', 'PUT', 'PATCH', 'DELETE']
+
+        if request.method in restricted_methods:
+            user = request.user
+            if not user.is_authenticated:
+                return JsonResponse({"error": "Authentication required."}, status=403)
+
+            # Check if user is admin or moderator
+            if not hasattr(user, 'role') or user.role not in ['admin', 'moderator']:
+                return JsonResponse({"error": "Permission denied. Admin or moderator role required."}, status=403)
+
+        return self.get_response(request)
