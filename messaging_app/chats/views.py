@@ -42,7 +42,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Message.objects.filter(
             conversation__participants=self.request.user
-        )
+        
     
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
