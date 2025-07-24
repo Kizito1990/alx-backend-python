@@ -8,6 +8,8 @@ from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOrSender
 from .permissions import IsParticipantOfConversation
+from .pagination import MessagePagination
+from .filters import MessageFilter
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -41,6 +43,13 @@ class MessageViewSet(viewsets.ModelViewSet):
     filterset_fields = ['conversation', 'sender']
     permission_classes = [IsParticipantOrSender]
     permission_classes = [IsParticipantOfConversation]
+
+    pagination_class = MessagePagination
+
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = MessageFilter
+    ordering_fields = ['timestamp']
+    ordering = ['-timestamp']
 
     def get_queryset(self):
         return Message.objects.filter(conversation__participants=self.request.user)
