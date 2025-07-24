@@ -15,22 +15,17 @@ class IsParticipantOrSender(permissions.BasePermission):
             return obj.sender == request.user or request.user in obj.conversation.participants.all()
         return False
 class IsParticipantOfConversation(permissions.BasePermission):
-    """
-    Custom permission to only allow participants of a conversation
-    to view or modify messages in that conversation.
-    """
-
     def has_permission(self, request, view):
-        # User must be authenticated
+        # Allow only authenticated users
         return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        """
-        Check if the user is a participant in the conversation.
-        This method is used for object-level permissions.
-        """
-        if hasattr(obj, 'conversation'):
+        # Allow safe methods if the user is a participant
+        if request.method in SAFE_METHODS:
             return request.user in obj.conversation.participants.all()
-        elif hasattr(obj, 'participants'):
-            return request.user in obj.participants.all()
+
+        # Allow PUT, PATCH, DELETE only if user is a participant
+        if request.method in ["PUT", "PATCH", "DELETE"]:
+            return request.user in obj.conversation.participants.all()
+
         return False
