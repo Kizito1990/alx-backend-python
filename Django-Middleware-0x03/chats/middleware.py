@@ -14,33 +14,27 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-class RequestLoggingMiddleware:
+
+class RolePermissionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        user = request.user if request.user.is_authenticated else 'Anonymous'
-        log_message = f"{datetime.now()} - User: {user} - Path: {request.path}"
-        logger.info(log_message)
+        # Define restricted HTTP methods
+        restricted_methods = ['POST', 'PUT', 'PATCH', 'DELETE']
 
-        response = self.get_response(request)
-        return response
+        # Only check role if user is making a restricted request
+        if request.method in restricted_methods:
+            user = request.user
 
-class RestrictAccessByTimeMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
+            if not user.is_authenticated:
+                return JsonResponse({'error': 'Authentication required.'}, status=403)
 
-    def __call__(self, request):
-        current_time = datetime.now().time()
-        start_time = time(18, 0)  # 6:00 PM
-        end_time = time(21, 0)    # 9:00 PM
-
-        # Block access if current time is NOT between 6PM and 9PM
-        if not (start_time <= current_time <= end_time):
-            return HttpResponseForbidden("Access to this app is only allowed between 6 PM and 9 PM.")
+            # Assuming the User model has a 'role' attribute
+            if not hasattr(user, 'role') or user.role not in ['admin', 'moderator']:
+                return JsonResponse({'error': 'Permission denied. Admin or moderator role required.'}, status=403)
 
         return self.get_response(request)
-
 
 class OffensiveLanguageMiddleware:
     def __init__(self, get_response):
@@ -63,21 +57,3 @@ class OffensiveLanguageMiddleware:
 
         return self.get_response(request)
 
-
-class RolePermissionMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        restricted_methods = ['POST', 'PUT', 'PATCH', 'DELETE']
-
-        if request.method in restricted_methods:
-            user = request.user
-            if not user.is_authenticated:
-                return JsonResponse({"error": "Authentication required."}, status=403)
-
-            # Check if user has a role attribute and it's either 'admin' or 'moderator'
-            if not hasattr(user, 'role') or user.role not in ['admin', 'moderator']:
-                return JsonResponse({"error": "Permission denied. Admin or moderator role required."}, status=403)
-
-        return self.get_response(request)
