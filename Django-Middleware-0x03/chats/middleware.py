@@ -15,6 +15,28 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 
+
+class OffensiveLanguageMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.offensive_words = {"badword1", "badword2", "stupid", "idiot"}  # Add more as needed
+
+    def __call__(self, request):
+        if request.method == "POST" and request.path.startswith("/messages/"):
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+                message = data.get("message", "")
+
+                if any(word.lower() in message.lower() for word in self.offensive_words):
+                    return JsonResponse(
+                        {"error": "Offensive language detected. Please revise your message."},
+                        status=400
+                    )
+            except (ValueError, json.JSONDecodeError):
+                pass  # ignore malformed JSON and let normal error handling take over
+
+        return self.get_response(request)
+    
 class RolePermissionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
