@@ -6,9 +6,14 @@ class Message(models.Model):
     receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    edited = models.BooleanField(default=False)  # New field
+    edited = models.BooleanField(default=False)  # New 
+    read = models.BooleanField(default=False)
     edited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='edited_messages' = models.ForeignKey(
         
+    
+    objects = models.Manager()  # Default manager
+    unread = UnreadMessagesManager()  # ✅ Custom manager
+
 
     parent_message = models.ForeignKey(
         'self',
@@ -39,3 +44,9 @@ class MessageHistory(models.Model):
 
     def __str__(self):
         return f"History for message ID {self.message.id} at {self.edited_at}"
+
+# Django-Chat/models.py
+
+class UnreadMessagesManager(models.Manager):
+    def for_user(self, user):
+        return self.filter(receiver=user, read=False).only('id', 'sender', 'timestamp', 'content')

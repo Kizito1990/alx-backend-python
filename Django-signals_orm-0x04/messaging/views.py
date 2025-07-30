@@ -45,7 +45,7 @@ def send_message(request):
     else:
         users = User.objects.exclude(id=request.user.id)
         return render(request, 'messaging/send_message.html', {'users': users})
-        
+
 @login_required
 def inbox(request):
     # Fetch messages where the current user is the receiver
@@ -54,3 +54,9 @@ def inbox(request):
                               .order_by('-timestamp')
 
     return render(request, 'messaging/inbox.html', {'messages': messages})
+
+
+@login_required
+def unread_inbox(request):
+    unread_messages = Message.unread.for_user(request.user)
+    return render(request, 'messaging/unread_inbox.html', {'unread_messages': unread_messages})
