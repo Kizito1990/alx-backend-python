@@ -7,9 +7,10 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     edited = models.BooleanField(default=False)  # New field
-    edited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='edited_messages')
+    edited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='edited_messages' = models.ForeignKey(
+        
 
-     parent_message = models.ForeignKey(
+    parent_message = models.ForeignKey(
         'self',
         null=True,
         blank=True,
@@ -18,7 +19,9 @@ class Message(models.Model):
     )
 
     def __str__(self):
-        return f"From {self.sender.username} to {self.receiver.username}"
+        return f"{self.sender.username} to {self.receiver.username}: {self.content[:20]}"
+
+
 
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
