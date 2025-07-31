@@ -60,3 +60,9 @@ def inbox(request):
 def unread_inbox(request):
     unread_messages = Message.unread.unread_for_user(request.user).only('id', 'sender', 'timestamp', 'content')
     return render(request, 'messaging/unread_inbox.html', {'unread_messages': unread_messages})
+
+@cache_page(60)  # Caches the view for 60 seconds
+def message_list(request):
+    messages = Message.objects.all().select_related('sender', 'receiver').order_by('-timestamp')
+    return render(request, 'chats/message_list.html', {'messages': messages})
+
