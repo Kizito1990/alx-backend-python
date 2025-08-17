@@ -1,0 +1,8 @@
+#!/bin/bash
+# messaging_app/kurbeScript
+
+minikube start --driver=docker
+
+kubectl cluster-info
+
+kubectl get pods
