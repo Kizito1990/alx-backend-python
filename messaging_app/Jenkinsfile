@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        docker { image 'python:3.10' }
-    }
+    agent any
 
     environment {
         // GitHub credentials (stored in Jenkins)
@@ -26,26 +24,20 @@ pipeline {
             }
         }
 
-        stage('Set up Python Environment') {
+        stage('Set up Python Environment & Run Tests') {
             steps {
                 dir("${APP_DIR}") {
-                    sh '''
-                    python3 -m venv venv
-                    source venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    '''
-                }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                dir("${APP_DIR}") {
-                    sh '''
-                    source venv/bin/activate
-                    pytest --junitxml=pytest-report.xml
-                    '''
+                    script {
+                        docker.image('python:3.10').inside {
+                            sh '''
+                                python -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install -r requirements.txt
+                                pytest --junitxml=pytest-report.xml
+                            '''
+                        }
+                    }
                 }
             }
         }
