@@ -1,86 +1,46 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.10'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
-        // GitHub credentials (stored in Jenkins)
-        GIT_CREDENTIALS = 'github-creds'
-
-        // Docker Hub repository (change to your username/repo)
-        DOCKERHUB_REPO = "ibirikambiri/messaging-app"
-
-        // Docker Hub credentials (stored in Jenkins)
-        DOCKER_CREDENTIALS = 'dockedockerhub-credentials'
-
-        // Project directory
-        APP_DIR = "messaging_app"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        DOCKERHUB_REPO = 'ibirikambiri/messaging-app'
+        APP_DIR = 'messaging_app'
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Kizito1990/alx-backend-python.git',
-                    credentialsId: "${GIT_CREDENTIALS}"
-            }
-        }
-
-        stage('Set up Python Environment & Run Tests') {
+        stage('Install dependencies & Test') {
             steps {
                 dir("${APP_DIR}") {
-                    script {
-                        docker.image('python:3.10').inside {
-                            sh '''
-                                python -m venv venv
-                                . venv/bin/activate
-                                pip install --upgrade pip
-                                pip install -r requirements.txt
-                                pytest --junitxml=pytest-report.xml
-                            '''
-                        }
-                    }
+                    sh '''
+                        python -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pytest --junitxml=pytest-report.xml
+                    '''
                 }
             }
         }
 
-        stage('Publish Test Report') {
+        stage('Build Docker image') {
             steps {
                 dir("${APP_DIR}") {
-                    junit 'pytest-report.xml'
+                    sh "docker build -t $DOCKERHUB_REPO:latest ."
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Push Docker image') {
             steps {
-                script {
-                    dir("${APP_DIR}") {
-                        docker.build("${DOCKERHUB_REPO}:latest")
-                    }
+                withDockerRegistry([credentialsId: "${DOCKERHUB_CREDENTIALS}", url: ""]) {
+                    sh "docker push $DOCKERHUB_REPO:latest"
                 }
             }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                        docker.image("${DOCKERHUB_REPO}:latest").push()
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning workspace...'
-            deleteDir()
-        }
-        success {
-            echo 'Pipeline completed successfully 🎉'
-        }
-        failure {
-            echo 'Pipeline failed ❌'
         }
     }
 }
